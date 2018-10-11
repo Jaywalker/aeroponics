@@ -78,7 +78,7 @@ func virtualSun(cycles []*LightCycle) {
 
 	for {
 		hour, min, _ := time.Now().Clock()
-		fmt.Printf("%d:%d\n", hour, min)
+		fmt.Printf("%02d:%02d\n", hour, min)
 		for _, cycle := range cycles {
 			riseHour, riseMin := cycle.RiseClock()
 			setHour, setMin := cycle.SetClock()
