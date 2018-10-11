@@ -3,10 +3,9 @@ Description=Aeroponics Daemon
 After=network.target
 
 [Service]
-WorkingDirectory=/home/jaywalker/go/src/local/aeroponics/
-ExecStart=/home/jaywalker/go/src/local/aeroponics/aeroponics
+WorkingDirectory=/home/jaywalker/go/src/github.com/Jaywalker/aeroponics/
+ExecStart=/home/jaywalker/go/src/github.com/Jaywalker/aeroponics/aeroponics
 UMask=0002
 
 [Install]
-WantedBy=multi-user.targe
-:
+WantedBy=multi-user.target
