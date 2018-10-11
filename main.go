@@ -9,9 +9,27 @@ import (
 )
 
 type LightCycle struct {
-	pin               uint8
+	name              string
+	pin               rpio.Pin
 	riseHour, riseMin int
 	setHour, setMin   int
+	Active            bool
+}
+
+func (cycle *LightCycle) Name() string {
+	return cycle.name
+}
+
+func (cycle *LightCycle) Pin() rpio.Pin {
+	return cycle.pin
+}
+
+func (cycle *LightCycle) RiseClock() (hour, min int) {
+	return cycle.riseHour, cycle.riseMin
+}
+
+func (cycle *LightCycle) SetClock() (hour, min int) {
+	return cycle.setHour, cycle.setMin
 }
 
 var (
@@ -33,7 +51,7 @@ func virtualRain() {
 	}
 }
 
-func virtualSun() {
+func virtualSun(cycles []*LightCycle) {
 	//http://hortsci.ashspublications.org/content/28/5/552.6
 	/*
 		Abstract
@@ -51,24 +69,31 @@ func virtualSun() {
 		advantageously continuous supplemental lighting for a short period of time but are negatively affected on a
 		long term basis. Future works should look at varying photoperiods to optimize yields.
 	*/
-	sunup := false
-	lightGroup1.High()
+
+	//Set them all to off to start
+	for _, cycle := range cycles {
+		cycle.Pin().High()
+		cycle.Active = false
+	}
+
 	for {
 		hour, min, _ := time.Now().Clock()
 		fmt.Printf("%d:%d\n", hour, min)
-		if hour >= 6 && hour < 22 {
-			if !sunup {
-				lightGroup1.Low()
-				fmt.Println("Sun up")
-				sunup = true
-				//time.Sleep(time.Hour * 16)
-			}
-		} else if hour >= 22 || hour < 6 {
-			if sunup {
-				lightGroup1.High()
-				fmt.Println("Sundown")
-				//time.Sleep(time.Hour * 8)
-				sunup = false
+		for _, cycle := range cycles {
+			riseHour, riseMin := cycle.RiseClock()
+			setHour, setMin := cycle.SetClock()
+			if hour >= riseHour && min >= riseMin && hour < setHour {
+				if !cycle.Active {
+					cycle.Pin().Low()
+					fmt.Println(cycle.Name(), "- Sun up!")
+					cycle.Active = true
+				}
+			} else if (hour >= setHour && min >= setMin) || hour < riseHour {
+				if cycle.Active {
+					cycle.Pin().High()
+					fmt.Println(cycle.Name(), "- Sunset!")
+					cycle.Active = false
+				}
 			}
 		}
 		time.Sleep(time.Minute)
@@ -89,6 +114,9 @@ func main() {
 	solenoid.Output()
 	lightGroup1.Output()
 
+	cycles := make([]*LightCycle, 1)
+	cycles[0] = &LightCycle{"MainSun", lightGroup1, 6, 0, 22, 0, false} //Main sun rises at 6:00 and sets at 22:00
+
 	go virtualRain()
-	virtualSun()
+	virtualSun(cycles)
 }
