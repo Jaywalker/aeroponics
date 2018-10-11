@@ -8,6 +8,12 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
+type LightCycle struct {
+	pin               uint8
+	riseHour, riseMin int
+	setHour, setMin   int
+}
+
 var (
 	// Use mcu pin 4, corresponds to physical pin 7 on the pi
 	solenoid = rpio.Pin(4)
@@ -45,13 +51,27 @@ func virtualSun() {
 		advantageously continuous supplemental lighting for a short period of time but are negatively affected on a
 		long term basis. Future works should look at varying photoperiods to optimize yields.
 	*/
+	sunup := false
+	lightGroup1.High()
 	for {
-		lightGroup1.Low()
-		fmt.Println("Sun up")
-		time.Sleep(time.Hour * 16)
-		lightGroup1.High()
-		fmt.Println("Sundown")
-		time.Sleep(time.Hour * 8)
+		hour, min, _ := time.Now().Clock()
+		fmt.Printf("%d:%d\n", hour, min)
+		if hour >= 6 && hour < 22 {
+			if !sunup {
+				lightGroup1.Low()
+				fmt.Println("Sun up")
+				sunup = true
+				//time.Sleep(time.Hour * 16)
+			}
+		} else if hour >= 22 || hour < 6 {
+			if sunup {
+				lightGroup1.High()
+				fmt.Println("Sundown")
+				//time.Sleep(time.Hour * 8)
+				sunup = false
+			}
+		}
+		time.Sleep(time.Minute)
 	}
 }
 
